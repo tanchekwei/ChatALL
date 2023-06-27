@@ -17,6 +17,7 @@ import ChatGLMBot from "@/bots/lmsys/ChatGLMBot";
 import AlpacaBot from "@/bots/lmsys/AlpacaBot";
 import ClaudeBot from "@/bots/lmsys/ClaudeBot";
 import DevBot from "@/bots/DevBot";
+import DevBot2 from "@/bots/DevBot2";
 import GradioAppBot from "@/bots/huggingface/GradioAppBot";
 import HuggingChatBot from "@/bots/huggingface/HuggingChatBot";
 import QianWenBot from "./QianWenBot";
@@ -66,6 +67,7 @@ const disabled = [];
 
 if (process.env.NODE_ENV !== "production") {
   all.push(DevBot.getInstance());
+  all.push(DevBot2.getInstance());
 }
 
 const bots = {

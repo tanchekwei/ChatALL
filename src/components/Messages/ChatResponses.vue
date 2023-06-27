@@ -4,6 +4,9 @@
       :columns="columns"
       :messages="grouped"
       @update-message="props.updateMessage"
+      @update-thread-message="props.updateThreadMessage"
+      :threadIndex="props.threadIndex"
+      :isThread="props.isThread"
     ></chat-response>
   </template>
 </template>
@@ -23,6 +26,17 @@ const props = defineProps({
   },
   updateMessage: {
     type: Function,
+  },
+  updateThreadMessage: {
+    type: Function,
+  },
+  threadIndex: {
+    type: Number,
+    required: false,
+  },
+  isThread: {
+    type: Boolean,
+    default: false,
   },
 });
 

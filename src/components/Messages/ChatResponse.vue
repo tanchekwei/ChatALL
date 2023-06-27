@@ -1,8 +1,13 @@
 <template>
   <v-card
     ref="root"
-    :class="['message', 'response', isHighlighted ? 'highlight-border' : '']"
+    :class="[
+      'message',
+      props.isThread ? 'response-thread' : 'response',
+      isHighlighted ? 'highlight-border' : '',
+    ]"
     :loading="isAllDone ? false : 'primary'"
+    :flat="props.isThread"
   >
     <v-card-title class="title">
       <img :src="botLogo" alt="Bot Icon" />
@@ -33,7 +38,7 @@
         flat
         icon
         size="x-small"
-        v-if="isShowResendButton"
+        v-if="isAllowResend"
         @click="resendPrompt(messages[0])"
       >
         <v-icon>mdi-refresh</v-icon>
@@ -54,14 +59,22 @@
         <v-icon>mdi-delete</v-icon>
       </v-btn>
     </v-card-title>
-    <Markdown
-      v-if="props.messages.length === 1"
-      class="markdown-body"
-      :breaks="true"
-      :html="messages[0].format === 'html'"
-      :source="messages[0].content"
-      @click="handleClick"
-    />
+    <template v-if="props.messages.length === 1">
+      <Markdown
+        class="markdown-body"
+        :breaks="true"
+        :html="messages[0].format === 'html'"
+        :source="messages[0].content"
+        @click="handleClick"
+      />
+      <template v-if="messages[0].threadIndex !== undefined && !props.isThread">
+        <chat-thread
+          :threadIndex="messages[0].threadIndex"
+          :updateThreadMessage="updateThreadMessage"
+        ></chat-thread>
+      </template>
+    </template>
+
     <v-carousel
       v-else
       hide-delimiter-background
@@ -78,8 +91,39 @@
           :source="message.content"
           @click="handleClick"
         />
+        <template v-if="message.threadIndex !== undefined && !props.isThread">
+          <chat-thread
+            :threadIndex="message.threadIndex"
+            :updateThreadMessage="updateThreadMessage"
+          ></chat-thread>
+        </template>
       </v-carousel-item>
     </v-carousel>
+    <div
+      v-if="isAllowCreateThread"
+      style="display: flex; align-items: flex-end; margin-top: 1rem"
+    >
+      <v-textarea
+        style="padding-right: 0.5rem"
+        v-model="promptRef"
+        auto-grow
+        max-rows="8.5"
+        rows="1"
+        density="compact"
+        hide-details
+        variant="solo"
+        :placeholder="`${$t('footer.sendPrompt')} ${botFullname}`"
+        @keydown="filterEnterKey"
+      ></v-textarea>
+      <v-btn
+        :disabled="promptRef.trim() === ''"
+        color="primary"
+        size="small"
+        @click="sendPromptToBot"
+      >
+        <v-icon>mdi-send</v-icon>
+      </v-btn>
+    </div>
   </v-card>
   <ConfirmModal ref="confirmModal" />
 </template>
@@ -91,6 +135,7 @@ import i18n from "@/i18n";
 import Markdown from "vue3-markdown-it";
 import { useMatomo } from "@/composables/matomo";
 import ConfirmModal from "@/components/ConfirmModal.vue";
+import ChatThread from "./ChatThread.vue";
 import bots from "@/bots";
 
 const props = defineProps({
@@ -102,14 +147,23 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  threadIndex: {
+    type: Number,
+    required: false,
+  },
+  isThread: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emits = defineEmits(["update-message"]);
+const emits = defineEmits(["update-message", "update-thread-message"]);
 
 const matomo = useMatomo();
 const store = useStore();
 
 const root = ref();
+const promptRef = ref("");
 const maxPage = computed(() => props.messages.length - 1);
 const carouselModel = ref(maxPage.value);
 const confirmModal = ref(null);
@@ -125,20 +179,100 @@ const botFullname = computed(() => {
 });
 
 const isHighlighted = computed(() => props.messages.some((m) => m.highlight));
-const isAllDone = computed(() => {
-  return !props.messages.some((m) => !m.done);
+const isAllDone = computed(() => !props.messages.some((m) => !m.done));
+const isLatestPrompt = computed(
+  () =>
+    props.messages[0].promptIndex !== undefined &&
+    store.getters.currentChat.latestPromptIndex !== undefined &&
+    store.getters.currentChat.latestPromptIndex ===
+      props.messages[0].promptIndex,
+);
+
+const isLatestPromptForThread = computed(() => {
+  if (props.isThread) {
+    const responseIndex =
+      store.getters.currentChat.threads[props.threadIndex].responseIndex;
+    const threadPromptIndex =
+      store.getters.currentChat.messages[responseIndex].promptIndex;
+    return (
+      threadPromptIndex !== undefined &&
+      store.getters.currentChat.latestPromptIndex !== undefined &&
+      store.getters.currentChat.latestPromptIndex === threadPromptIndex
+    );
+  }
+  return false;
 });
-const isShowResendButton = computed(() => {
+const isAllowCreateThread = computed(() => {
   return (
+    !props.isThread && // not thread
     isAllDone.value &&
     messageBotIsSelected() &&
-    props.messages[0].promptIndex &&
-    store.getters.currentChat.latestPromptIndex &&
-    store.getters.currentChat.latestPromptIndex ===
-      props.messages[0].promptIndex
+    isLatestPrompt.value && // latest prompt
+    carouselModel.value === maxPage.value // on last page
   );
 });
+const isAllowResend = computed(() => {
+  if (props.isThread) {
+    return (
+      !props.messages.some((m) => m.threadIndex !== undefined) &&
+      isAllDone.value &&
+      messageBotIsSelected() &&
+      props.messages[0].promptIndex !== undefined &&
+      store.getters.currentChat.threads[props.threadIndex].latestPromptIndex !==
+        undefined &&
+      store.getters.currentChat.threads[props.threadIndex].latestPromptIndex ===
+        props.messages[0].promptIndex &&
+      isLatestPromptForThread.value
+    );
+  } else {
+    return (
+      !props.messages.some((m) => m.threadIndex !== undefined) &&
+      isAllDone.value &&
+      messageBotIsSelected() &&
+      isLatestPrompt.value
+    );
+  }
+});
 const isShowPagingButton = computed(() => props.messages.length > 1);
+
+// Send the prompt when the user presses enter and prevent the default behavior
+// But if the shift, ctrl, alt, or meta keys are pressed, do as default
+function filterEnterKey(event) {
+  if (
+    event.keyCode == 13 &&
+    !event.shiftKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.metaKey
+  ) {
+    event.preventDefault();
+    sendPromptToBot();
+  }
+}
+
+function sendPromptToBot() {
+  if (promptRef.value.trim() === "") return;
+  // const responseMessage = undefined;
+  const botInstance = bots.getBotByClassName(props.messages[0].className);
+  // botInstance;
+  // if (toBots.length === 0) return;
+
+  store.dispatch("sendPromptInThread", {
+    responseIndex: props.messages[carouselModel.value].index,
+    threadIndex: props.messages[carouselModel.value].threadIndex,
+    prompt: promptRef.value,
+    bot: botInstance,
+  });
+
+  promptRef.value = "";
+
+  // matomo.value?.trackEvent(
+  //   "prompt",
+  //   "send",
+  //   "Active bots count",
+  //   toBots.length,
+  // );
+}
 
 watch(
   () => props.columns,
@@ -146,6 +280,17 @@ watch(
     root.value.$el.style.setProperty("--columns", props.columns);
   },
 );
+
+const updateThreadMessage = (threadIndex, messageIndex, values) => {
+  store.dispatch("updateThreadMessage", {
+    indexes: {
+      chatIndex: store.state.currentChatIndex,
+      messageIndex,
+      threadIndex,
+    },
+    message: values,
+  });
+};
 
 onMounted(() => {
   root.value.$el.style.setProperty("--columns", props.columns);
@@ -161,9 +306,20 @@ function copyToClipboard() {
 }
 
 function toggleHighlight() {
-  emits("update-message", props.messages[carouselModel.value].index, {
-    highlight: !props.messages[carouselModel.value].highlight,
-  });
+  if (props.isThread) {
+    emits(
+      "update-thread-message",
+      props.threadIndex,
+      props.messages[carouselModel.value].index,
+      {
+        highlight: !props.messages[carouselModel.value].highlight,
+      },
+    );
+  } else {
+    emits("update-message", props.messages[carouselModel.value].index, {
+      highlight: !props.messages[carouselModel.value].highlight,
+    });
+  }
   matomo.value?.trackEvent(
     "vote",
     "highlight",
@@ -177,7 +333,18 @@ async function hide() {
     i18n.global.t("modal.confirmHide"),
   );
   if (result) {
-    emits("update-message", props.messages[0].index, { hide: true });
+    if (props.isThread) {
+      emits(
+        "update-thread-message",
+        props.threadIndex,
+        props.messages[carouselModel.value].index,
+        { hide: true },
+      );
+    } else {
+      emits("update-message", props.messages[carouselModel.value].index, {
+        hide: true,
+      });
+    }
     matomo.value?.trackEvent("vote", "hide", props.messages[0].className, 1);
   }
 }
@@ -199,20 +366,39 @@ function handleClick(event) {
 }
 
 function resendPrompt(responseMessage) {
-  if (!responseMessage.promptIndex) {
+  if (responseMessage.promptIndex === undefined) {
     return;
   }
-  const promptMessage =
-    store.getters.currentChat.messages[responseMessage.promptIndex];
-  if (promptMessage) {
-    const botInstance = bots.getBotByClassName(responseMessage.className);
-    store.dispatch("sendPrompt", {
-      prompt: promptMessage.content,
-      bots: [botInstance],
-      promptIndex: responseMessage.promptIndex,
-    });
+  if (props.isThread) {
+    const promptMessage =
+      store.getters.currentChat.threads[props.threadIndex].messages[
+        responseMessage.promptIndex
+      ];
+    if (promptMessage) {
+      const botInstance = bots.getBotByClassName(responseMessage.className);
+      store.dispatch("sendPromptInThread", {
+        prompt: promptMessage.content,
+        bot: botInstance,
+        promptIndex: responseMessage.promptIndex,
+        responseIndex: responseMessage.index,
+        threadIndex: props.threadIndex,
+      });
+    } else {
+      // show not found
+    }
   } else {
-    // show not found
+    const promptMessage =
+      store.getters.currentChat.messages[responseMessage.promptIndex];
+    if (promptMessage) {
+      const botInstance = bots.getBotByClassName(responseMessage.className);
+      store.dispatch("sendPrompt", {
+        prompt: promptMessage.content,
+        bots: [botInstance],
+        promptIndex: responseMessage.promptIndex,
+      });
+    } else {
+      // show not found
+    }
   }
 }
 
@@ -229,50 +415,58 @@ function messageBotIsSelected() {
   overflow: auto;
 }
 
-.markdown-body{
-    background-color: rgb(var(--v-theme-response));
-    font-family: inherit;
-  }
-  
-  .message {
-      border-radius: 8px;
-      padding: 16px;
-      word-wrap: break-word;
-      text-align: left;
-  }
-  
-  .highlight-border {
-      box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 1);
-  }
-  
-  .prompt {
-      background-color: rgb(var(--v-theme-prompt));
-      width: fit-content;
-      grid-column: 1 / span var(--columns);
-  }
-  
-  .prompt pre {
-    white-space: pre-wrap; 
-    font-family: inherit;
-  }
-  
-  .response {
-      background-color: rgb(var(--v-theme-response));
-      width: 100%;
-      grid-column: auto / span 1;
-  }
-  
-  .title {
-      display: flex;
-      align-items: center;
-      font-size: 1rem;
-      padding: 0;
-      margin-bottom: 8px;
-  }
-  
-  .title img {
-      width: 20px;
-      height: 20px;
-      margin-right: 4px;
-  }
+.markdown-body {
+  background-color: rgb(var(--v-theme-response));
+  font-family: inherit;
+}
+
+.message {
+  border-radius: 8px;
+  padding: 16px;
+  word-wrap: break-word;
+  text-align: left;
+}
+
+.highlight-border {
+  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 1);
+}
+
+.prompt {
+  background-color: rgb(var(--v-theme-prompt));
+  width: fit-content;
+  grid-column: 1 / span var(--columns);
+}
+
+.prompt pre {
+  white-space: pre-wrap;
+  font-family: inherit;
+}
+
+.response {
+  background-color: rgb(var(--v-theme-response));
+  width: 100%;
+  grid-column: auto / span 1;
+}
+
+.response-thread {
+  background-color: rgb(var(--v-theme-response));
+  width: 98%;
+  grid-column: auto / span 1;
+  margin-left: .2rem;
+  margin-bottom: .2rem;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.title img {
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
+}
 </style>
