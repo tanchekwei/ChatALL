@@ -298,7 +298,7 @@ export default createStore({
         });
       }
 
-      if (promptIndex === undefined) {
+      if (promptIndex === undefined) { // index starts at zero, using `if (!promptIndex)` will enter wrong condition for first time.
         // if promptIndex not found, not resend, push to messages array
         const threadPromptMessage = {
           type: "prompt",

@@ -3,10 +3,10 @@
     <chat-response
       :columns="columns"
       :messages="grouped"
+      :isThread="props.isThread"
+      :threadIndex="props.threadIndex"
       @update-message="props.updateMessage"
       @update-thread-message="props.updateThreadMessage"
-      :threadIndex="props.threadIndex"
-      :isThread="props.isThread"
     ></chat-response>
   </template>
 </template>

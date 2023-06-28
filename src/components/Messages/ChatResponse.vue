@@ -3,8 +3,8 @@
     ref="root"
     :class="[
       'message',
-      props.isThread ? 'response-thread' : 'response',
       isHighlighted ? 'highlight-border' : '',
+      props.isThread ? 'response-thread' : 'response',
     ]"
     :loading="isAllDone ? false : 'primary'"
     :flat="props.isThread"
@@ -38,7 +38,7 @@
         flat
         icon
         size="x-small"
-        v-if="isAllowResend"
+        v-if="isShowResendButton"
         @click="resendPrompt(messages[0])"
       >
         <v-icon>mdi-refresh</v-icon>
@@ -67,14 +67,15 @@
         :source="messages[0].content"
         @click="handleClick"
       />
-      <template v-if="messages[0].threadIndex !== undefined && !props.isThread">
+      <template v-if="!props.isThread && messages[0].threadIndex !== undefined">
+        <!-- if the repsonse is not a thread and there is value in message.threadIndex, means thread existed for this response
+            we pass in threadIndex into <chat-thread> to render based on the threadIndex -->
         <chat-thread
           :threadIndex="messages[0].threadIndex"
           :updateThreadMessage="updateThreadMessage"
         ></chat-thread>
       </template>
     </template>
-
     <v-carousel
       v-else
       hide-delimiter-background
@@ -91,7 +92,9 @@
           :source="message.content"
           @click="handleClick"
         />
-        <template v-if="message.threadIndex !== undefined && !props.isThread">
+        <template v-if="!props.isThread && message.threadIndex !== undefined">
+          <!-- if the repsonse is not a thread and there is value in message.threadIndex, means thread existed for this response
+          we pass in threadIndex into <chat-thread> to render based on the threadIndex -->
           <chat-thread
             :threadIndex="message.threadIndex"
             :updateThreadMessage="updateThreadMessage"
@@ -100,7 +103,7 @@
       </v-carousel-item>
     </v-carousel>
     <div
-      v-if="isAllowCreateThread"
+      v-if="isShowThreadTextField"
       style="display: flex; align-items: flex-end; margin-top: 1rem"
     >
       <v-textarea
@@ -178,9 +181,12 @@ const botFullname = computed(() => {
   return bot ? bot.getFullname() : "";
 });
 
-const isHighlighted = computed(() => props.messages.some((m) => m.highlight));
-const isAllDone = computed(() => !props.messages.some((m) => !m.done));
+const isHighlighted = computed(() => props.messages.some((m) => m.highlight)); // if any message is hightlighted, return true
+const isAllDone = computed(() => !props.messages.some((m) => !m.done)); // if any message is not done, return false
 const isLatestPrompt = computed(
+  // if the current message response to user latest prompt, return true
+  // this flag is used to determine whether to hide Resend button, hide it when is not latest prompt
+  // to ensure the prompt and response in messages array is in correct order
   () =>
     props.messages[0].promptIndex !== undefined &&
     store.getters.currentChat.latestPromptIndex !== undefined &&
@@ -190,10 +196,13 @@ const isLatestPrompt = computed(
 
 const isLatestPromptForThread = computed(() => {
   if (props.isThread) {
+    // if the current thread is response latest prompt, return true
+    // this flag is used to determine whether to hide Resend button in thread, hide it when is not latest prompt
+    // to ensure the prompt and response in messages array is in correct order
     const responseIndex =
-      store.getters.currentChat.threads[props.threadIndex].responseIndex;
+      store.getters.currentChat.threads[props.threadIndex].responseIndex; // get responseIndex, from current thread
     const threadPromptIndex =
-      store.getters.currentChat.messages[responseIndex].promptIndex;
+      store.getters.currentChat.messages[responseIndex].promptIndex; // using responseIndex to get response from messages, and in the repsonse we can retrieve promptIndex
     return (
       threadPromptIndex !== undefined &&
       store.getters.currentChat.latestPromptIndex !== undefined &&
@@ -202,22 +211,28 @@ const isLatestPromptForThread = computed(() => {
   }
   return false;
 });
-const isAllowCreateThread = computed(() => {
+const isShowThreadTextField = computed(() => {
   return (
-    !props.isThread && // not thread
-    isAllDone.value &&
-    messageBotIsSelected() &&
-    isLatestPrompt.value && // latest prompt
-    carouselModel.value === maxPage.value // on last page
+    // show the thread text field when all conditions met
+    !props.isThread && // if current response is not a thread,
+    isAllDone.value && // if all response done,
+    messageBotIsSelected() && // if responding bot selected,
+    isLatestPrompt.value && // if current response is a response to latest prompt,
+    carouselModel.value === maxPage.value // if current response is on last page,
   );
 });
-const isAllowResend = computed(() => {
+const isSomeResponsesHasThread = computed(() =>
+  // if some responses contain threadIndex, return true
+  props.messages.some((m) => m.threadIndex !== undefined),
+);
+
+const isShowResendButton = computed(() => {
+  // show the resend button when all conditions met
   if (props.isThread) {
     return (
-      !props.messages.some((m) => m.threadIndex !== undefined) &&
-      isAllDone.value &&
-      messageBotIsSelected() &&
-      props.messages[0].promptIndex !== undefined &&
+      isAllDone.value && // if all response done
+      messageBotIsSelected() && // if responding bot selected
+      props.messages[0].promptIndex !== undefined && // if current threads is a response to latest prompt
       store.getters.currentChat.threads[props.threadIndex].latestPromptIndex !==
         undefined &&
       store.getters.currentChat.threads[props.threadIndex].latestPromptIndex ===
@@ -226,10 +241,10 @@ const isAllowResend = computed(() => {
     );
   } else {
     return (
-      !props.messages.some((m) => m.threadIndex !== undefined) &&
-      isAllDone.value &&
-      messageBotIsSelected() &&
-      isLatestPrompt.value
+      !isSomeResponsesHasThread.value && // if all responses don't have thread
+      isAllDone.value && // if all response done
+      messageBotIsSelected() && // if responding bot selected
+      isLatestPrompt.value // if current response is a response to latest prompt
     );
   }
 });
