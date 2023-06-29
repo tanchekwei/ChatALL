@@ -35,17 +35,21 @@
       {{ $t("footer.sendPrompt") }}
     </v-btn>
     <div class="bot-logos margin-bottom">
-      <BotLogo
-        v-for="(bot, index) in favBots"
-        :id="`fav-bot-${index + 1}`"
-        :key="index"
-        :bot="bot.instance"
-        :active="activeBots[bot.classname]"
-        size="36"
-        @click="toggleSelected(bot.instance)"
-        v-shortkey.once="['ctrl', `${index + 1}`]"
-        @shortkey="toggleSelected(bot.instance)"
-      />
+      <div id="fav-bot-logo">
+        <BotLogo
+          draggable="true"
+          handle=".avatar-handle"
+          v-for="(bot, index) in favBots"
+          :id="`fav-bot-${index + 1}`"
+          :key="index"
+          :bot="bot.instance"
+          :active="activeBots[bot.classname]"
+          size="36"
+          @click="toggleSelected(bot.instance)"
+          v-shortkey.once="['ctrl', `${index + 1}`]"
+          @shortkey="toggleSelected(bot.instance)"
+        />
+      </div>
       <BotsMenu
         :id="SHORTCUT_BOTS_MENU.elementId"
         ref="botsMenuRef"
@@ -58,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeMount, reactive, watch } from "vue";
+import { ref, computed, onBeforeMount, reactive, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 
 // Components
@@ -75,6 +79,8 @@ import {
   SHORTCUT_PROMPT_TEXTAREA,
   SHORTCUT_BOTS_MENU,
 } from "./../ShortcutGuide/shortcut.const";
+
+import Sortable from "sortablejs";
 
 const { ipcRenderer } = window.require("electron");
 
@@ -228,9 +234,22 @@ onBeforeMount(async () => {
     });
   });
 });
+
+onMounted(() => {
+  new Sortable(document.querySelector("#fav-bot-logo"));
+  // sortable.on("end", () => {
+  //   this.avatars.sort((a, b) => {
+  //     return a.id - b.id;
+  //   });
+  // });
+});
 </script>
 
 <style>
+.avatar-handle {
+  cursor: move;
+}
+
 .footer {
   position: fixed;
   bottom: 0;
