@@ -31,7 +31,8 @@
   },
   "error": {
     "failedConnectUrl": "连接 { url } 失败",
-    "closedByServer": "连接被服务器关闭"
+    "closedByServer": "连接被服务器关闭",
+    "solveCAPTCHA": "请点击下面的聊天机器人网站链接，解决验证码，然后关闭窗口。"
   },
   "modal": {
     "confirmHide": "删除这条消息？",
