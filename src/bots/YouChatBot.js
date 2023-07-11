@@ -1,4 +1,5 @@
 import Bot from "@/bots/Bot";
+import i18n from "@/i18n";
 import AsyncLock from "async-lock";
 import axios from "axios";
 import queryString from "query-string";
@@ -97,7 +98,17 @@ export default class YouChatBot extends Bot {
         });
         source.addEventListener("error", (event) => {
           console.error(event);
-          reject(new Error(event));
+          if (event?.source?.xhr?.status === 403) {
+            reject(
+              new Error(
+                `${i18n.global.t("error.solveCAPTCHA")}<br/><a href="${
+                  this.constructor._loginUrl
+                }" target="innerWindow">${this.constructor._loginUrl}</a>`,
+              ),
+            );
+          } else {
+            reject(new Error(event));
+          }
         });
         source.stream();
       } catch (err) {
