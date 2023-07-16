@@ -60,19 +60,22 @@ export default createStore({
     chats: [
       {
         title: "New Chat",
-        favBots: [
-          // default bots
-          { classname: "ChatGPT35Bot", selected: true },
-          { classname: "BingChatCreativeBot", selected: true },
-          { classname: "BingChatBalancedBot", selected: true },
-          { classname: "BingChatPreciseBot", selected: true },
-          { classname: "PiBot", selected: true },
-          { classname: "YouChatBot", selected: true },
-          { classname: "ChatGLMBot", selected: true },
-          { classname: "VicunaBot", selected: true },
-          { classname: "AlpacaBot", selected: true },
-          { classname: "ClaudeBot", selected: true },
-        ],
+        favBots:
+          process.env.NODE_ENV === "production"
+            ? [
+                // default bots
+                { classname: "ChatGPT35Bot", selected: true },
+                { classname: "BingChatCreativeBot", selected: true },
+                { classname: "BingChatBalancedBot", selected: true },
+                { classname: "BingChatPreciseBot", selected: true },
+                { classname: "PiBot", selected: true },
+                { classname: "YouChatBot", selected: true },
+                { classname: "ChatGLMBot", selected: true },
+                { classname: "VicunaBot", selected: true },
+                { classname: "AlpacaBot", selected: true },
+                { classname: "ClaudeBot", selected: true },
+              ]
+            : [],
         contexts: {},
         messages: [],
         threads: [],
