@@ -15,6 +15,7 @@
         v-model="settingState[setting.name]"
         outlined
         dense
+        :disabled="isDisable"
         :label="setting.label"
         :placeholder="setting.placeholder"
         :hide-details="setting.hideDetails"
@@ -28,6 +29,7 @@
         v-model="settingState[setting.name]"
         outlined
         dense
+        :disabled="isDisable"
         :label="setting.label"
         :placeholder="setting.placeholder"
         :hide-details="setting.hideDetails"
@@ -41,6 +43,7 @@
         v-else-if="setting.type === Type.Slider"
         v-model="settingState[setting.name] /* falcon.temperature */"
         color="primary"
+        :disabled="isDisable"
         :min="setting.min"
         :max="setting.max"
         :step="setting.step"
@@ -63,6 +66,7 @@
                 refs[setting.name] = el;
               }
             "
+            :disabled="isDisable"
             type="number"
             style="width: 100px"
             density="compact"
@@ -100,6 +104,9 @@ const props = defineProps({
   mutationType: {
     type: String,
     required: true,
+  },
+  isDisable: {
+    type: Boolean,
   },
 });
 
