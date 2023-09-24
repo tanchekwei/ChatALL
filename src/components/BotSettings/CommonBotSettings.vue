@@ -42,7 +42,6 @@
       <v-slider
         v-else-if="setting.type === Type.Slider"
         v-model="settingState[setting.name] /* falcon.temperature */"
-        color="primary"
         :disabled="isDisable"
         :min="setting.min"
         :max="setting.max"
@@ -143,3 +142,9 @@ function getInputElement(ref) {
   return ref.$el.querySelector("input");
 }
 </script>
+
+<style scoped>
+:deep() .v-input__append .v-field--disabled {
+  opacity: 1;
+}
+</style>

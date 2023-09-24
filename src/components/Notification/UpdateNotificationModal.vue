@@ -10,19 +10,14 @@
       <span class="text-center">
         {{ $t("updates.latestVersion") }}: {{ versions.latest }}
       </span>
-      <v-btn
-        prepend-icon="mdi-github"
-        color="primary"
-        variant="tonal"
-        @click="openReleasePage"
-      >
+      <v-btn prepend-icon="mdi-github" variant="tonal" @click="openReleasePage">
         {{ $t("updates.downloadFromGitHub") }}
       </v-btn>
       <template v-slot:actions>
-        <v-btn color="primary" @click="skip">
+        <v-btn @click="skip">
           {{ $t("updates.skipThisVersion") }}
         </v-btn>
-        <v-btn color="primary" @click="snackbar = false">
+        <v-btn @click="snackbar = false">
           {{ $t("updates.close") }}
         </v-btn>
       </template>
@@ -83,9 +78,5 @@ function openReleasePage() {
   flex-direction: column;
   width: 100%;
   justify-content: center;
-}
-
-span {
-  color: rgb(var(--v-theme-font));
 }
 </style>
