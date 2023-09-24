@@ -1,5 +1,6 @@
 import Bot from "@/bots/Bot";
 import i18n from "@/i18n";
+import store from "@/store";
 import AsyncLock from "async-lock";
 import axios from "axios";
 import queryString from "query-string";
@@ -64,17 +65,17 @@ export default class OpenAssistantBot extends Bot {
       "https://open-assistant.io/api/chat/assistant_message",
       {
         chat_id: context.id,
-        model_config_name: "OA_SFT_Llama_30B_6",
+        model_config_name: store.state.openAssistant.model,
         content: prompt,
         parent_id: prompterResponse.data.id,
         plugins: [],
         sampling_parameters: {
-          top_k: 50,
-          top_p: 0.95,
-          typical_p: null,
-          temperature: 0.75,
-          repetition_penalty: 1.2,
-          max_new_tokens: 1024,
+          top_k: store.state.openAssistant.topK,
+          top_p: store.state.openAssistant.topP,
+          typical_p: store.state.openAssistant.typicalP,
+          temperature: store.state.openAssistant.temperature,
+          repetition_penalty: store.state.openAssistant.repetitionPenalty,
+          max_new_tokens: store.state.openAssistant.maxNewTokens,
         },
       },
     );

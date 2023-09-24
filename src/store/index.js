@@ -89,6 +89,16 @@ export default createStore({
       topP: 0.9,
       repetitionPenalty: 1.2,
     },
+    openAssistant: {
+      model: "OA_SFT_Llama_30B_6",
+      preset: "k50",
+      temperature: 0.75,
+      maxNewTokens: 1024,
+      topP: 0.95,
+      repetitionPenalty: 1.2,
+      topK: 50,
+      typicalP: null,
+    },
     chats: [
       {
         title: "New Chat",
@@ -212,6 +222,9 @@ export default createStore({
     },
     setFalcon(state, values) {
       state.falcon = { ...state.falcon, ...values };
+    },
+    setOpenAssistant(state, values) {
+      state.openAssistant = { ...state.openAssistant, ...values };
     },
     setLatestPromptIndex(state, promptIndex) {
       const currentChat = state.chats[state.currentChatIndex];
