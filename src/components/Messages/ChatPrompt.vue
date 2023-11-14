@@ -2,15 +2,21 @@
   <v-card
     ref="root"
     class="message prompt"
+    style="cursor: auto"
     :class="isThread ? 'thread-prompt' : ''"
+    :ripple="store.state.scrollToMessage !== undefined"
+    @click="() => {}"
   >
-    <pre>{{ message ? message.content : "" }}</pre>
+    <!-- need to pass in empty function to @click event for ripple to work ==' -->
+    <pre :id="message.index">{{ message ? message.content : "" }}</pre>
   </v-card>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
+import { useStore } from "vuex";
 
+const store = useStore();
 const root = ref();
 const props = defineProps({
   message: {

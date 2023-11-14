@@ -281,6 +281,26 @@ export default createStore({
       state.currentChatIndex = index;
       Chats.table.update(index, { selectedTime: new Date().getTime() });
     },
+    async selectChatAndScrollToMessage(state, { message }) {
+      if (state.currentChatIndex === message.chatIndex) {
+        state.scrollToMessage = {
+          isWaitMessageLoad: false,
+          index: message.index,
+        };
+      } else {
+        state.currentChatIndex = message.chatIndex;
+        await Chats.table.update(message.chatIndex, {
+          selectedTime: new Date().getTime(),
+        });
+        state.scrollToMessage = {
+          isWaitMessageLoad: true,
+          index: message.index,
+        };
+      }
+    },
+    scrollToMessageCompleted(state) {
+      state.scrollToMessage = undefined;
+    },
     hideChat(state) {
       state.chats[state.currentChatIndex].hide = true;
     },

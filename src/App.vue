@@ -6,6 +6,7 @@
         v-model:open="isChatDrawerOpen"
         @focus-textarea="focusPromptTextarea"
       ></ChatDrawer>
+      <FindDrawer v-model:open="isFindDrawerOpen"></FindDrawer>
       <v-main class="content">
         <v-app-bar class="header-content pa-0">
           <!-- Start Header  -->
@@ -19,6 +20,7 @@
             >
             </v-app-bar-nav-icon>
             <img
+              v-if="false"
               :class="{ 'dark-png': store.state.theme === Theme.DARK }"
               class="logo"
               src="@/assets/logo-banner.png"
@@ -48,6 +50,13 @@
             style="padding-right: 16px"
             v-show="isSelectedResponsesEmpty"
           >
+            <v-icon
+              class="cursor-pointer"
+              color="primary"
+              icon="mdi-magnify-plus-outline"
+              size="x-large"
+              @click="isFindDrawerOpen = !isFindDrawerOpen"
+            ></v-icon>
             <v-icon
               :id="SHORTCUT_FIND.elementId"
               class="cursor-pointer"
@@ -166,6 +175,7 @@ import { liveQuery } from "dexie";
 
 // Components
 import ChatDrawer from "@/components/ChatDrawer/ChatDrawer.vue";
+import FindDrawer from "@/components/FindDrawer/FindDrawer.vue";
 import ChatMessages from "@/components/Messages/ChatMessages.vue";
 import SettingsModal from "@/components/SettingsModal.vue";
 import ConfirmModal from "@/components/ConfirmModal.vue";
@@ -206,6 +216,7 @@ const shortcutGuideRef = ref(null);
 const isShortcutGuideOpen = ref(false);
 const isSettingsOpen = ref(false);
 const isChatDrawerOpen = ref(store.state.isChatDrawerOpen);
+const isFindDrawerOpen = ref(false);
 const chatDrawerRef = ref();
 const isSelectedResponsesEmpty = ref(true);
 const isChatActionOpen = ref(false);

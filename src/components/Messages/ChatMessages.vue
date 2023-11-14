@@ -99,6 +99,7 @@ const autoScrollToBottom = () => {
 };
 
 const currentChatIndex = computed(() => store.state.currentChatIndex);
+const scrollToMessage = computed(() => store.state.scrollToMessage);
 let currentMessageSub;
 let scrollToBottomFirst;
 watch(
@@ -112,9 +113,14 @@ watch(
       }
       currentMessageSub = createChatMessageLiveQuery(
         store.state.currentChatIndex,
-      ).subscribe(() => {
+      ).subscribe(async () => {
         loading.value = false;
-        if (scrollToBottomFirst) {
+        if (scrollToMessage.value) {
+          await nextTick();
+          scrollToSpecificMessage(scrollToMessage.value.index);
+          triggerRippleEffect(scrollToMessage.value.index);
+          store.commit("scrollToMessageCompleted");
+        } else if (scrollToBottomFirst) {
           scrollToBottomFirst = false;
           nextTick(() => scrollToBottom({ immediately: true }));
         }
@@ -125,6 +131,41 @@ watch(
 );
 
 watch(() => store.state.updateCounter, autoScrollToBottom);
+
+watch(scrollToMessage, async (payload) => {
+  if (payload && !payload.isWaitMessageLoad) {
+    await nextTick();
+    scrollToSpecificMessage(scrollToMessage.value.index);
+    triggerRippleEffect(scrollToMessage.value.index);
+    store.commit("scrollToMessageCompleted");
+  }
+});
+
+async function scrollToSpecificMessage(index) {
+  const element = document.getElementById(index);
+  if (element) {
+    const headerOffset = 110;
+    const elementPosition = element.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.scrollY - headerOffset;
+    window.scrollTo({
+      top: offsetPosition,
+    });
+  }
+}
+
+function triggerRippleEffect(index) {
+  const element = document.getElementById(index)?.closest(".v-card");
+  if (element) {
+    const event = new Event("mousedown");
+    const offset = element.getBoundingClientRect();
+    event.clientX = offset.left + offset.width / 2;
+    event.clientY = offset.top + offset.height / 2;
+    element.dispatchEvent(event);
+    setTimeout(function () {
+      element.dispatchEvent(new Event("mouseup"));
+    }, 1250);
+  }
+}
 
 const onScroll = () => {
   const scrollPosition = window.pageYOffset + window.innerHeight;

@@ -10,7 +10,9 @@
     ]"
     :loading="isAllDone ? false : 'primary'"
     :flat="props.isThread"
-    :ripple="!isSelectedResponsesEmpty"
+    :ripple="
+      !isSelectedResponsesEmpty || store.state.scrollToMessage !== undefined
+    "
     @click="!isSelectedResponsesEmpty && select($event)"
   >
     <v-card-title class="title">
@@ -65,7 +67,11 @@
       </v-btn>
     </v-card-title>
     <template v-if="messages && messages.length === 1">
-      <v-md-preview :text="messages[0].content" @click="handleClick" />
+      <v-md-preview
+        :id="messages[0].index"
+        :text="messages[0].content"
+        @click="handleClick"
+      />
       <template v-if="!isThread && messages.length && messages[0].hasThread">
         <chat-thread
           :chat="chat"
@@ -83,7 +89,11 @@
       v-model="carouselModel"
     >
       <v-carousel-item v-for="(message, i) in messages" :key="i">
-        <v-md-preview :text="message.content" @click="handleClick" />
+        <v-md-preview
+          :id="message.index"
+          :text="message.content"
+          @click="handleClick"
+        />
         <template v-if="!isThread && message && message.hasThread">
           <chat-thread
             :chat="chat"
