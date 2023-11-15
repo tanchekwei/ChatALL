@@ -118,8 +118,10 @@ watch(
         await nextTick();
         if (scrollToMessage.value) {
           await nextTick();
+          showSpecificCarouselItem(scrollToMessage.value.index);
           scrollToSpecificMessage(scrollToMessage.value.index);
           triggerRippleEffect(scrollToMessage.value.index);
+          highlightFindText(scrollToMessage.value.index);
           store.commit("scrollToMessageCompleted");
         } else if (scrollToBottomFirst) {
           scrollToBottomFirst = false;
@@ -136,11 +138,24 @@ watch(() => store.state.updateCounter, autoScrollToBottom);
 watch(scrollToMessage, async (payload) => {
   if (payload && !payload.isWaitMessageLoad) {
     await nextTick();
+    showSpecificCarouselItem(scrollToMessage.value.index);
     scrollToSpecificMessage(scrollToMessage.value.index);
     triggerRippleEffect(scrollToMessage.value.index);
+    highlightFindText(scrollToMessage.value.index);
     store.commit("scrollToMessageCompleted");
   }
 });
+
+function showSpecificCarouselItem(index) {
+  const element = document.getElementById(index);
+  const carousel = element?.closest(".v-carousel");
+  if (carousel) {
+    carousel
+      .querySelectorAll(".v-carousel-item")
+      ?.forEach((e) => e.style.setProperty("display", "none"));
+    element.closest(".v-carousel-item")?.style.setProperty("display", "block");
+  }
+}
 
 async function scrollToSpecificMessage(index) {
   const element = document.getElementById(index);
@@ -166,6 +181,27 @@ function triggerRippleEffect(index) {
       element.dispatchEvent(new Event("mouseup"));
     }, 1250);
   }
+}
+
+function highlightFindText(index) {
+  index;
+  return;
+  // const element = document.getElementById(index);
+  // if (!element) {
+  //   return;
+  // }
+  // const regex = new RegExp(store.state.findText, store.state.findRegexFlag);
+  // let match;
+  // while ((match = regex.exec(element.innerText)) !== null) {
+  //   var range = document.createRange();
+  //   range.setStart(element, match.index);
+  //   range.setEnd(element, regex.lastIndex);
+
+  //   var span = document.createElement("span");
+  //   span.className = "highlight";
+  //   span.appendChild(range.extractContents());
+  //   range.insertNode(span);
+  // }
 }
 
 const onScroll = () => {

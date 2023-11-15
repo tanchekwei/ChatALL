@@ -88,7 +88,7 @@
       :show-arrows="false"
       v-model="carouselModel"
     >
-      <v-carousel-item v-for="(message, i) in messages" :key="i">
+      <v-carousel-item v-for="(message, i) in messages" :key="i" eager>
         <v-md-preview
           :id="message.index"
           :text="message.content"

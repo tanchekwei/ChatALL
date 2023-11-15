@@ -106,6 +106,8 @@ let findMessageLiveQuery = () => {
   }
   const findRegexFlag = matchCaseToggle.value?.length ? undefined : "i";
   const findRegex = new RegExp(findTextModel.value, findRegexFlag);
+  store.state.findText = findTextModel.value;
+  store.state.findRegexFlag = findRegexFlag;
   return liveQuery(async () => {
     const messages = await Messages.table
       .filter((message) => !message.hide && findRegex.test(message.content))
@@ -128,9 +130,11 @@ let findMessageLiveQuery = () => {
     for (const key of Object.keys(groupedMessage)) {
       if (chatObj[key] === undefined) {
         const chat = await Chats.table.get(key);
-        chatObj[key] = {
-          title: chat.title,
-        };
+        if (chat) {
+          chatObj[key] = {
+            title: chat.title,
+          };
+        }
       }
     }
     currentChatMessages.value = Object.entries(groupedMessage);
