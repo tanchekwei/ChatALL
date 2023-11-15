@@ -88,7 +88,7 @@ import Messages from "@/store/messages";
 import Threads from "@/store/threads";
 import { liveQuery } from "dexie";
 import { of } from "rxjs";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { useStore } from "vuex";
 
 const store = useStore();
@@ -165,6 +165,15 @@ function find() {
   }
   currentMessageSub = findMessageLiveQuery().subscribe();
 }
+
+watch(
+  () => props.open,
+  (value) => {
+    if (value) {
+      findTextRef.value.focus();
+    }
+  },
+);
 
 // function highlight(p, regex, text) {
 //   let match;
