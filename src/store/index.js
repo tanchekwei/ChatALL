@@ -289,13 +289,13 @@ export default createStore({
         };
       } else {
         state.currentChatIndex = message.chatIndex;
-        await Chats.table.update(message.chatIndex, {
-          selectedTime: new Date().getTime(),
-        });
         state.scrollToMessage = {
           isWaitMessageLoad: true,
           index: message.index,
         };
+        Chats.table.update(message.chatIndex, {
+          selectedTime: new Date().getTime(),
+        });
       }
     },
     scrollToMessageCompleted(state) {

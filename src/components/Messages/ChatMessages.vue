@@ -115,6 +115,7 @@ watch(
         store.state.currentChatIndex,
       ).subscribe(async () => {
         loading.value = false;
+        await nextTick();
         if (scrollToMessage.value) {
           await nextTick();
           scrollToSpecificMessage(scrollToMessage.value.index);
@@ -122,7 +123,7 @@ watch(
           store.commit("scrollToMessageCompleted");
         } else if (scrollToBottomFirst) {
           scrollToBottomFirst = false;
-          nextTick(() => scrollToBottom({ immediately: true }));
+          scrollToBottom({ immediately: true });
         }
       });
     }
