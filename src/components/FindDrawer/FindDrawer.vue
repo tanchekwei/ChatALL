@@ -1,5 +1,5 @@
 <template>
-  <v-navigation-drawer permanent="" :model-value="props.open">
+  <v-navigation-drawer permanent :model-value="props.open">
     <v-list nav class="position-sticky bg-surface" style="top: 0; z-index: 1">
       <v-list-item density="comfortable" class="border" id="find-list-item">
         <template v-slot:default>
@@ -64,6 +64,7 @@
         v-for="message in messages[1]"
         :key="message.index"
         :message="message"
+        :findRegex="findRegex"
         :current-chat-index="store.state.currentChatIndex"
         @selectChatAndScrollToMessage="selectChatAndScrollToMessage"
       ></FindDrawerItem>
@@ -88,10 +89,14 @@ import Messages from "@/store/messages";
 import Threads from "@/store/threads";
 import { liveQuery } from "dexie";
 import { of } from "rxjs";
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { useStore } from "vuex";
 
 const store = useStore();
+const findRegex = computed(() => {
+  const findRegexFlag = matchCaseToggle.value?.length ? undefined : "i";
+  return new RegExp(findTextModel.value, findRegexFlag);
+});
 const props = defineProps(["open"]);
 const emit = defineEmits(["update:open"]);
 
@@ -104,16 +109,16 @@ let findMessageLiveQuery = () => {
   if (Boolean(findTextModel.value) === false) {
     return of([]);
   }
-  const findRegexFlag = matchCaseToggle.value?.length ? undefined : "i";
-  const findRegex = new RegExp(findTextModel.value, findRegexFlag);
-  store.state.findText = findTextModel.value;
-  store.state.findRegexFlag = findRegexFlag;
   return liveQuery(async () => {
     const messages = await Messages.table
-      .filter((message) => !message.hide && findRegex.test(message.content))
+      .filter(
+        (message) => !message.hide && findRegex.value.test(message.content),
+      )
       .toArray();
     const threads = await Threads.table
-      .filter((message) => !message.hide && findRegex.test(message.content))
+      .filter(
+        (message) => !message.hide && findRegex.value.test(message.content),
+      )
       .toArray();
     const allMessages = messages.concat(threads);
     allMessages.sort((a, b) => b.createdTime - a.createdTime);
